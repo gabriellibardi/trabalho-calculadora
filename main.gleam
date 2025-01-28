@@ -59,6 +59,20 @@ pub type Simbolo {
   Operador(Operador)
 }
 
+// 133809
+
+/// Converte uma *expressao_str* para uma lista de caracteres, desconsiderando espaços em branco.
+pub fn converte_expressao_str(expressao_str: String) -> List(String) {
+  string.split(expressao_str, "")
+  |> list.filter(fn(s) {s != " "})
+}
+
+pub fn converte_expressao_str_examples() {
+  check.eq(converte_expressao_str(""), [])
+  check.eq(converte_expressao_str("2"), ["2"])
+  check.eq(converte_expressao_str("(2 - 3)* 1"), ["(", "2", "-", "3", ")", "*", "1"])
+}
+
 /// Converte uma *expressao* na forma infixa para sua forma pós-fixa. Retorna um erro caso a estrutura da
 /// expressão seja inválida.
 pub fn converte_infixa(expressao: List(Simbolo)) -> Result(List(Simbolo), Erro) {
