@@ -32,6 +32,7 @@
 //      b. O valor final é o único valor restante na pilha.
 
 import gleam/list
+import gleam/int
 import gleam/result
 import gleam/string
 import sgleam/check
@@ -59,6 +60,11 @@ pub type Simbolo {
   Operador(Operador)
 }
 
+/// Representa a estrutura de uma pilha durante a montagem de uma expressão
+pub type PilhaConversao {
+  PilhaConversao(List(Simbolo), Boolean)
+}
+
 /// Converte uma *expressao_str* para uma lista de caracteres, desconsiderando espaços em branco.
 pub fn converte_expressao_str(expressao_str: String) -> List(String) {
   string.split(expressao_str, "")
@@ -71,8 +77,23 @@ pub fn converte_expressao_str_examples() {
   check.eq(converte_expressao_str("(2 - 3)* 1"), ["(", "2", "-", "3", ")", "*", "1"])
 }
 
+/// Verifica se a lista de *caracteres* pode formar uma possível expressão, retornando a lista de 
+/// entrada caso sejam ou um Erro caso contrário.
+pub fn verifica_expressao(caracteres: List(String)) -> Result(List(String), Erro) {
+  use l1 <- result.try(verifica_parenteses(caracteres))
+  use l2 <- result.try(verifica_caracteres(caracteres))
+  Ok(caracteres)
+}
+
+pub fn verifica_expressao_examples() {
+  check.eq(verifica_expressao([]), Ok([]))
+  check.eq(verifica_expressao(["9", "2", "-", "1", "0", "*", "(", "1", "1", "+", "2", "2", ")", "/", "1"]), Ok(["9", "2", "-", "1", "0", "*", "(", "1", "1", "+", "2", "2", ")", "/", "1"]))
+  check.eq(verifica_expressao(["(", "5", "2", "-", "1", "4", ")", "*", ")", "9", "+", "2", ")"]), Error(ExpressaoInvalida))
+  check.eq(verifica_expressao(["7", "1", "-", "a", "/", "2"]), Error(CaractereInvalido))
+}
+
 /// Verifica os *caracteres* de uma expressão possui os parênteses contados corretamente, retornando a
-/// lista de entrada caso estejam e um Erro caso contrário.
+/// lista de entrada caso estejam ou um Erro caso contrário.
 pub fn verifica_parenteses(caracteres: List(String)) -> Result(List(String), Erro) {
   case list.fold(caracteres, 0, fn(acc, c) { case acc < 0, c {True, _ -> acc False, "(" -> acc + 1 False, ")" -> acc - 1 False, _ -> acc}}) == 0 {
     True -> Ok(caracteres)
@@ -86,11 +107,52 @@ pub fn verifica_parenteses_examples() {
   check.eq(verifica_parenteses(["(", "1", "*", "1", "0", "(", "3", "*", "1", ")"]), Error(ExpressaoInvalida))
 }
 
+/// Verifica se a integridade dos *caracteres*, retornando a lista caso os caracteres sejam íntegros ou
+/// um Erro caso contrário.
+/// Um caractere é íntegro se ele é um possível operando (número de 0 a 9) ou um operador (parênteses ou
+/// + - / *).
+pub fn verifica_caracteres(caracteres: List(String)) -> Result(List(String), Erro) {
+  list.try_map(caracteres, verifica_caractere)
+}
+
+pub fn verifica_caracteres_examples() {
+  check.eq(verifica_caracteres([]), Ok([]))
+  check.eq(verifica_caracteres(["(", "1", "+", "2", ")", "*", "3", "/", "(", "8", "-", "9", ")"]), Ok(["(", "1", "+", "2", ")", "*", "3", "/", "(", "8", "-", "9", ")"]))
+  check.eq(verifica_caracteres(["9", "-", "2", "*", "a"]), Error(CaractereInvalido))
+}
+
+/// Verifica se o *caractere* é válido para uma possível expressão. Retorna um Erro caso
+/// não seja.
+pub fn verifica_caractere(caractere: String) -> Result(String, Erro) {
+  case caractere, int.parse(caractere) {
+    "/", _ -> Ok(caractere)
+    "*", _ -> Ok(caractere)
+    "-", _ -> Ok(caractere)
+    "+", _ -> Ok(caractere)
+    "(", _ -> Ok(caractere)
+    ")", _ -> Ok(caractere)
+    _, Ok(_) -> Ok(caractere)
+    _, Error(_) -> Error(CaractereInvalido)
+  }
+}
+
+pub fn verifica_caractere_examples() {
+  check.eq(verifica_caractere(""), Error(CaractereInvalido))
+  check.eq(verifica_caractere("a"), Error(CaractereInvalido))
+  check.eq(verifica_caractere("2"), Ok("2"))
+  check.eq(verifica_caractere("/"), Ok("/"))
+  check.eq(verifica_caractere("*"), Ok("*"))
+  check.eq(verifica_caractere("-"), Ok("-"))
+  check.eq(verifica_caractere("+"), Ok("+"))
+  check.eq(verifica_caractere("("), Ok("("))
+  check.eq(verifica_caractere(")"), Ok(")"))
+}
+
 /// Converte uma lista de *caracteres* para uma expressão infixa, isto é, uma lista de símbolos.
 /// Retorna um erro caso a estrutura da expressão seja inválida.
 /// Requer que os parênteses já tenham sido verificados.
 pub fn converte_expressao_infixa(caracteres: List(String)) -> Result(List(Simbolo), Erro) {
-  list.fold(caracteres, "", FUNCAOAUXILIARAQUI)
+  converte_expressao_infixa_acc(caracteres, PilhaConversao("", True))
 }
 
 pub fn converte_expressao_infixa_examples() {
@@ -98,6 +160,68 @@ pub fn converte_expressao_infixa_examples() {
   check.eq(converte_expressao_infixa(["a", "/", "b"]), Error(CaractereInvalido))
   check.eq(converte_expressao_infixa(["4", "2", "*", "(", "1", "3", "/", "2", ")"]), Ok([Operando(42), Operador(Multiplicacao), Operador(ParenteseAbertura), Operando(13), Operador(Divisao), Operando(2), Operador(ParenteseFechamento)]))
   check.eq(converte_expressao_infixa(["-", "3", "2", "+", "3", "*", "(", "-", "2", "/", "1", ")"]), Ok([Operando(-32), Operador(Soma), Operando(3), Operador(Multiplicacao), Operador(ParenteseAbertura), Operando(-2), Operador(Divisao), Operando(1), Operador(ParenteseFechamento)]))
+}
+
+/// Auxiliar com o acumulador *pilha_conversao* da função 'converte_expressao_infixa'.
+pub fn converte_expressao_infixa_acc(caracteres: List(String), pilha_conversao: PilhaConversao) -> Result(List(Simbolo), Erro) {
+  case caracteres {
+    [primeiro, ..resto] -> gerencia_conversao(primeiro, pilha_conversao, resto)
+    [] -> case gerencia_conversao("", pilha_conversao, resto)
+  }
+}
+
+pub fn converte_expressao_infixa_acc_examples() {
+  check.eq(converte_expressao_infixa_acc(["-", "1", "2", "*", "7", "+", "(", "-", "2", "/", "2", ")", "*", "(", "4", "-", "1", ")"], PilhaConversao("", True)), Ok([Operando(-12), Operador(Multiplicacao), Operando(7), Operador(Soma), Operador(ParenteseAbertura), Operando(-2), Operador(Divisao), Operando(2), Operador(ParenteseFechamento), Operador(Multiplicacao), Operador(ParenteseAbertura), Operando(4), Operador(Subtracao), Operando(1), Operador(ParenteseFechamento)]))
+  check.eq(converte_expressao_infixa_acc([], PilhaConversao("10", False)), Ok([Operando(10)]))
+}
+
+/// Realiza o gerenciamento da pilha e da lista de saída durante a conversão de uma lista de caracteres
+/// formada pelo primeiro *caractere* e o *resto*, e uma *pilha_conversao*, retornando uma expressão ou
+/// um Erro caso a conversão seja inválida.
+pub fn gerencia_conversao(caractere: String, pilha_conversao: PilhaConversao, resto: List(String)) -> Result(List(Simbolo), Erro) {
+  todo
+}
+
+pub fn gerencia_conversao_examples() {
+  check.eq(gerencia_conversao("+", PilhaConversao([Operando(2)], False), ["1", "-", "2"]), Ok[Operando(2), Operador(Soma), Operando(1), Operador(Subtracao), Operando(2)])
+  check.eq(gerencia_conversao("*", PilhaConversao([Operador(ParenteseFechamento)], False), ["7", "1"]), Ok[Operador(ParenteseFechamento), Operador(Multiplicacao), Operando(71)])
+  check.eq(gerencia_conversao("/", PilhaConversao([], False), ["5"]), Error(ExpressaoInvalida))
+
+  check.eq(gerencia_conversao("-", PilhaConversao([], True), ["1", "+", "2"]), Ok[Operando(-1), Operador(Soma), Operando(2)])
+  check.eq(gerencia_conversao("-", PilhaConversao([Operador(ParenteseAbertura)], True), ["1", "/", "2", ")"]), Ok[Operador(ParenteseAbertura), Operando(-1), Operador(Divisao), Operando(2), Operador(ParenteseFechamento)])
+  check.eq(gerencia_conversao("-", PilhaConversao([], ), []), Ok[])
+  check.eq(gerencia_conversao("-", PilhaConversao([], ), []), Ok[])
+
+  check.eq(gerencia_conversao("0", PilhaConversao(), []), Ok[])
+  check.eq(gerencia_conversao("9", PilhaConversao(), []), Ok[])
+  check.eq(gerencia_conversao("4", PilhaConversao(), []), Ok[])
+  check.eq(gerencia_conversao("0", PilhaConversao(), []), Ok[])
+  check.eq(gerencia_conversao("1", PilhaConversao(), []), Ok[])
+  
+  check.eq(gerencia_conversao("(", PilhaConversao(), []), Ok[])
+  check.eq(gerencia_conversao("(", PilhaConversao(), []), Ok[])
+  check.eq(gerencia_conversao("(", PilhaConversao(), []), Ok[])
+
+  check.eq(gerencia_conversao(")", PilhaConversao(), []), Ok[])
+  check.eq(gerencia_conversao(")", PilhaConversao(), []), Ok[])
+
+  check.eq(gerencia_conversao("", PilhaConversao(), []), Ok[])
+  check.eq(gerencia_conversao("", PilhaConversao(), []), Ok[])
+  check.eq(gerencia_conversao("", PilhaConversao(), []), Ok[])
+}
+
+/// Incrementa o *operando* adicionando o *caractere* à direita.
+pub fn incrementa_operando(operando: Int, caractere: String) -> Result(Operando, Erro) {
+  case int.parse(int.to_string(operando) <> caractere) {
+    Ok(num) -> Operando(num)
+    Error(_) -> Error(CaractereInvalido)
+  }
+}
+
+pub fn incrementa_operando_examples() {
+  check.eq(incrementa_operando(3, "2"), Ok(Operando(32)))
+  check.eq(incrementa_operando(-1, "0"), Ok(Operando(-10)))
+  check.eq(incrementa_operando(1, "a"), Error(CaractereInvalido))
 }
 
 /// Converte uma *expressao* na forma infixa para sua forma pós-fixa. Retorna um Erro caso a estrutura da
