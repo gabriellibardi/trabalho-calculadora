@@ -59,8 +59,6 @@ pub type Simbolo {
   Operador(Operador)
 }
 
-// 133809
-
 /// Converte uma *expressao_str* para uma lista de caracteres, desconsiderando espaços em branco.
 pub fn converte_expressao_str(expressao_str: String) -> List(String) {
   string.split(expressao_str, "")
@@ -71,6 +69,21 @@ pub fn converte_expressao_str_examples() {
   check.eq(converte_expressao_str(""), [])
   check.eq(converte_expressao_str("2"), ["2"])
   check.eq(converte_expressao_str("(2 - 3)* 1"), ["(", "2", "-", "3", ")", "*", "1"])
+}
+
+/// Converte uma lista de *caracteres* para uma expressão infixa, isto é, uma lista de símbolos.
+/// Retorna um erro caso a estrutura da expressão seja inválida.
+pub fn converte_expressao_infixa(caracteres: List(String)) -> Result(List(Simbolo), Erro) {
+  todo
+}
+
+pub fn converte_expressao_infixa_examples() {
+  check.eq(converte_expressao_infixa([]), Ok([]))
+  check.eq(converte_expressao_infixa(["(", "2", "1", "+", "("]), Error(ExpressaoInvalida))
+  check.eq(converte_expressao_infixa([")", "(", "1", "+", "2"]), Error(ExpressaoInvalida))
+  check.eq(converte_expressao_infixa(["a", "/", "b"]), Error(CaractereInvalido))
+  check.eq(converte_expressao_infixa(["4", "2", "*", "(", "1", "3", "/", "2", ")"]), Ok([Operando(42), Operador(*), Operador(ParenteseAbertura), Operando(13), Operador(Divisao), Operando(2), Operando(ParenteseFechamento)]))
+  check.eq(converte_expressao_infixa(["-", "3", "2", "+", "3", "*", "(", "-", "2", "/", "1", ")"]), Ok([Operando(-32), Operador(Soma), Operando(3), Operador(Multiplicacao), Operador(ParenteseAbertura), Operando(-2), Operador(Divisao), Operando(1), Operando(ParenteseFechamento)]))
 }
 
 /// Converte uma *expressao* na forma infixa para sua forma pós-fixa. Retorna um erro caso a estrutura da
@@ -375,4 +388,3 @@ pub fn converte_pilha_examples() {
     Error(ExpressaoInvalida),
   )
 }
-
