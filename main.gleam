@@ -71,22 +71,36 @@ pub fn converte_expressao_str_examples() {
   check.eq(converte_expressao_str("(2 - 3)* 1"), ["(", "2", "-", "3", ")", "*", "1"])
 }
 
+/// Verifica os *caracteres* de uma expressão possui os parênteses contados corretamente, retornando a
+/// lista de entrada caso estejam e um Erro caso contrário.
+pub fn verifica_parenteses(caracteres: List(String)) -> Result(List(String), Erro) {
+  case list.fold(caracteres, 0, fn(acc, c) { case acc < 0, c {True, _ -> acc False, "(" -> acc + 1 False, ")" -> acc - 1 False, _ -> acc}}) == 0 {
+    True -> Ok(caracteres)
+    False -> Error(ExpressaoInvalida)
+  }
+}
+
+pub fn verifica_parenteses_examples() {
+  check.eq(verifica_parenteses([]), Ok([]))
+  check.eq(verifica_parenteses(["(", "2", "3", "-", "1", "*", "(", "7", "/", "9", ")", "-", "1", ")"]), Ok(["(", "2", "3", "-", "1", "*", "(", "7", "/", "9", ")", "-", "1", ")"]))
+  check.eq(verifica_parenteses(["(", "1", "*", "1", "0", "(", "3", "*", "1", ")"]), Error(ExpressaoInvalida))
+}
+
 /// Converte uma lista de *caracteres* para uma expressão infixa, isto é, uma lista de símbolos.
 /// Retorna um erro caso a estrutura da expressão seja inválida.
+/// Requer que os parênteses já tenham sido verificados.
 pub fn converte_expressao_infixa(caracteres: List(String)) -> Result(List(Simbolo), Erro) {
-  todo
+  list.fold(caracteres, "", FUNCAOAUXILIARAQUI)
 }
 
 pub fn converte_expressao_infixa_examples() {
   check.eq(converte_expressao_infixa([]), Ok([]))
-  check.eq(converte_expressao_infixa(["(", "2", "1", "+", "("]), Error(ExpressaoInvalida))
-  check.eq(converte_expressao_infixa([")", "(", "1", "+", "2"]), Error(ExpressaoInvalida))
   check.eq(converte_expressao_infixa(["a", "/", "b"]), Error(CaractereInvalido))
-  check.eq(converte_expressao_infixa(["4", "2", "*", "(", "1", "3", "/", "2", ")"]), Ok([Operando(42), Operador(*), Operador(ParenteseAbertura), Operando(13), Operador(Divisao), Operando(2), Operando(ParenteseFechamento)]))
-  check.eq(converte_expressao_infixa(["-", "3", "2", "+", "3", "*", "(", "-", "2", "/", "1", ")"]), Ok([Operando(-32), Operador(Soma), Operando(3), Operador(Multiplicacao), Operador(ParenteseAbertura), Operando(-2), Operador(Divisao), Operando(1), Operando(ParenteseFechamento)]))
+  check.eq(converte_expressao_infixa(["4", "2", "*", "(", "1", "3", "/", "2", ")"]), Ok([Operando(42), Operador(Multiplicacao), Operador(ParenteseAbertura), Operando(13), Operador(Divisao), Operando(2), Operador(ParenteseFechamento)]))
+  check.eq(converte_expressao_infixa(["-", "3", "2", "+", "3", "*", "(", "-", "2", "/", "1", ")"]), Ok([Operando(-32), Operador(Soma), Operando(3), Operador(Multiplicacao), Operador(ParenteseAbertura), Operando(-2), Operador(Divisao), Operando(1), Operador(ParenteseFechamento)]))
 }
 
-/// Converte uma *expressao* na forma infixa para sua forma pós-fixa. Retorna um erro caso a estrutura da
+/// Converte uma *expressao* na forma infixa para sua forma pós-fixa. Retorna um Erro caso a estrutura da
 /// expressão seja inválida.
 pub fn converte_infixa(expressao: List(Simbolo)) -> Result(List(Simbolo), Erro) {
   converte_infixa_acc(expressao, [])
@@ -125,7 +139,7 @@ pub fn converte_infixa_examples() {
 }
 
 /// Converte uma *expressao* na forma infixa para sua forma pós-fixa, utilizando a *pilha* como acumulador.
-/// Retorna um erro caso a estrutura da expressão seja inválida.
+/// Retorna um Erro caso a estrutura da expressão seja inválida.
 pub fn converte_infixa_acc(
   expressao: List(Simbolo),
   pilha: List(Operador),
@@ -248,7 +262,7 @@ pub fn converte_infixa_acc_examples() {
 }
 
 /// Trata o fechamento de parênteses utilizando a *pilha* no processo de conversão do *resto_expressao*
-/// para a forma pós-fixa. Retorna um erro caso a estrutura da expressão seja inválida.
+/// para a forma pós-fixa. Retorna um Erro caso a estrutura da expressão seja inválida.
 pub fn trata_parenteses(
   resto_expressao: List(Simbolo),
   pilha: List(Operador),
@@ -284,7 +298,7 @@ pub fn trata_parenteses_examples() {
 }
 
 /// Trata o gerenciamento do *operador* utilizando a *pilha* no processo de conversão do *resto_expressao*
-/// para a forma pós-fixa. Retorna um erro caso a estrutura da expressão seja inválida.
+/// para a forma pós-fixa. Retorna um Erro caso a estrutura da expressão seja inválida.
 pub fn trata_operador(
   operador: Operador,
   resto_expressao: List(Simbolo),
