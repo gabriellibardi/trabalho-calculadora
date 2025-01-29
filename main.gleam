@@ -31,8 +31,8 @@
 //             resultado.
 //      b. O valor final é o único valor restante na pilha.
 
-import gleam/list
 import gleam/int
+import gleam/list
 import gleam/result
 import gleam/string
 import sgleam/check
@@ -75,36 +75,67 @@ pub type PilhaConversao {
 /// Converte uma *expressao_str* para uma lista de caracteres, desconsiderando espaços em branco.
 pub fn converte_expressao_str(expressao_str: String) -> List(String) {
   string.split(expressao_str, "")
-  |> list.filter(fn(s) {s != " "})
+  |> list.filter(fn(s) { s != " " })
 }
 
 pub fn converte_expressao_str_examples() {
   check.eq(converte_expressao_str(""), [])
   check.eq(converte_expressao_str("2"), ["2"])
-  check.eq(converte_expressao_str("(2 - 3)* 1"), ["(", "2", "-", "3", ")", "*", "1"])
+  check.eq(converte_expressao_str("(2 - 3)* 1"), [
+    "(", "2", "-", "3", ")", "*", "1",
+  ])
 }
 
 // VERIFICAÇÃO DA LISTA DE CARACTERES ---------------------------------------------------------------------------------
 
 /// Verifica se a lista de *caracteres* pode formar uma possível expressão, retornando a lista de 
 /// entrada caso sejam ou um Erro caso contrário.
-pub fn verifica_expressao(caracteres: List(String)) -> Result(List(String), Erro) {
-  use l1 <- result.try(verifica_parenteses(caracteres))
-  use l2 <- result.try(verifica_caracteres(caracteres))
+pub fn verifica_expressao(
+  caracteres: List(String),
+) -> Result(List(String), Erro) {
+  use _ <- result.try(verifica_parenteses(caracteres))
+  use _ <- result.try(verifica_caracteres(caracteres))
   Ok(caracteres)
 }
 
 pub fn verifica_expressao_examples() {
   check.eq(verifica_expressao([]), Ok([]))
-  check.eq(verifica_expressao(["9", "2", "-", "1", "0", "*", "(", "1", "1", "+", "2", "2", ")", "/", "1"]), Ok(["9", "2", "-", "1", "0", "*", "(", "1", "1", "+", "2", "2", ")", "/", "1"]))
-  check.eq(verifica_expressao(["(", "5", "2", "-", "1", "4", ")", "*", ")", "9", "+", "2", ")"]), Error(ExpressaoInvalida))
-  check.eq(verifica_expressao(["7", "1", "-", "a", "/", "2"]), Error(CaractereInvalido))
+  check.eq(
+    verifica_expressao([
+      "9", "2", "-", "1", "0", "*", "(", "1", "1", "+", "2", "2", ")", "/", "1",
+    ]),
+    Ok([
+      "9", "2", "-", "1", "0", "*", "(", "1", "1", "+", "2", "2", ")", "/", "1",
+    ]),
+  )
+  check.eq(
+    verifica_expressao([
+      "(", "5", "2", "-", "1", "4", ")", "*", ")", "9", "+", "2", ")",
+    ]),
+    Error(ExpressaoInvalida),
+  )
+  check.eq(
+    verifica_expressao(["7", "1", "-", "a", "/", "2"]),
+    Error(CaractereInvalido),
+  )
 }
 
 /// Verifica os *caracteres* de uma expressão possui os parênteses contados corretamente, retornando a
 /// lista de entrada caso estejam ou um Erro caso contrário.
-pub fn verifica_parenteses(caracteres: List(String)) -> Result(List(String), Erro) {
-  case list.fold(caracteres, 0, fn(acc, c) { case acc < 0, c {True, _ -> acc False, "(" -> acc + 1 False, ")" -> acc - 1 False, _ -> acc}}) == 0 {
+pub fn verifica_parenteses(
+  caracteres: List(String),
+) -> Result(List(String), Erro) {
+  case
+    list.fold(caracteres, 0, fn(acc, c) {
+      case acc < 0, c {
+        True, _ -> acc
+        False, "(" -> acc + 1
+        False, ")" -> acc - 1
+        False, _ -> acc
+      }
+    })
+    == 0
+  {
     True -> Ok(caracteres)
     False -> Error(ExpressaoInvalida)
   }
@@ -112,22 +143,40 @@ pub fn verifica_parenteses(caracteres: List(String)) -> Result(List(String), Err
 
 pub fn verifica_parenteses_examples() {
   check.eq(verifica_parenteses([]), Ok([]))
-  check.eq(verifica_parenteses(["(", "2", "3", "-", "1", "*", "(", "7", "/", "9", ")", "-", "1", ")"]), Ok(["(", "2", "3", "-", "1", "*", "(", "7", "/", "9", ")", "-", "1", ")"]))
-  check.eq(verifica_parenteses(["(", "1", "*", "1", "0", "(", "3", "*", "1", ")"]), Error(ExpressaoInvalida))
+  check.eq(
+    verifica_parenteses([
+      "(", "2", "3", "-", "1", "*", "(", "7", "/", "9", ")", "-", "1", ")",
+    ]),
+    Ok(["(", "2", "3", "-", "1", "*", "(", "7", "/", "9", ")", "-", "1", ")"]),
+  )
+  check.eq(
+    verifica_parenteses(["(", "1", "*", "1", "0", "(", "3", "*", "1", ")"]),
+    Error(ExpressaoInvalida),
+  )
 }
 
 /// Verifica se a integridade dos *caracteres*, retornando a lista caso os caracteres sejam íntegros ou
 /// um Erro caso contrário.
 /// Um caractere é íntegro se ele é um possível operando (número de 0 a 9) ou um operador (parênteses ou
 /// + - / *).
-pub fn verifica_caracteres(caracteres: List(String)) -> Result(List(String), Erro) {
+pub fn verifica_caracteres(
+  caracteres: List(String),
+) -> Result(List(String), Erro) {
   list.try_map(caracteres, verifica_caractere)
 }
 
 pub fn verifica_caracteres_examples() {
   check.eq(verifica_caracteres([]), Ok([]))
-  check.eq(verifica_caracteres(["(", "1", "+", "2", ")", "*", "3", "/", "(", "8", "-", "9", ")"]), Ok(["(", "1", "+", "2", ")", "*", "3", "/", "(", "8", "-", "9", ")"]))
-  check.eq(verifica_caracteres(["9", "-", "2", "*", "a"]), Error(CaractereInvalido))
+  check.eq(
+    verifica_caracteres([
+      "(", "1", "+", "2", ")", "*", "3", "/", "(", "8", "-", "9", ")",
+    ]),
+    Ok(["(", "1", "+", "2", ")", "*", "3", "/", "(", "8", "-", "9", ")"]),
+  )
+  check.eq(
+    verifica_caracteres(["9", "-", "2", "*", "a"]),
+    Error(CaractereInvalido),
+  )
 }
 
 /// Verifica se o *caractere* é válido para uma possível expressão. Retorna um Erro caso
@@ -162,19 +211,50 @@ pub fn verifica_caractere_examples() {
 /// Converte uma lista de *caracteres* para uma expressão infixa, isto é, uma lista de símbolos.
 /// Retorna um erro caso a estrutura da expressão seja inválida.
 /// Requer que os parênteses já tenham sido verificados.
-pub fn converte_expressao_infixa(caracteres: List(String)) -> Result(List(Simbolo), Erro) {
+pub fn converte_expressao_infixa(
+  caracteres: List(String),
+) -> Result(List(Simbolo), Erro) {
   converte_expressao_infixa_acc(caracteres, PilhaVazia(True))
 }
 
 pub fn converte_expressao_infixa_examples() {
   check.eq(converte_expressao_infixa([]), Ok([]))
   check.eq(converte_expressao_infixa(["a", "/", "b"]), Error(CaractereInvalido))
-  check.eq(converte_expressao_infixa(["4", "2", "*", "(", "1", "3", "/", "2", ")"]), Ok([Operando(42), Operador(Multiplicacao), Agrupador(ParenteseAbertura), Operando(13), Operador(Divisao), Operando(2), Agrupador(ParenteseFechamento)]))
-  check.eq(converte_expressao_infixa(["-", "3", "2", "+", "3", "*", "(", "-", "2", "/", "1", ")"]), Ok([Operando(-32), Operador(Soma), Operando(3), Operador(Multiplicacao), Agrupador(ParenteseAbertura), Operando(-2), Operador(Divisao), Operando(1), Agrupador(ParenteseFechamento)]))
+  check.eq(
+    converte_expressao_infixa(["4", "2", "*", "(", "1", "3", "/", "2", ")"]),
+    Ok([
+      Operando(42),
+      Operador(Multiplicacao),
+      Agrupador(ParenteseAbertura),
+      Operando(13),
+      Operador(Divisao),
+      Operando(2),
+      Agrupador(ParenteseFechamento),
+    ]),
+  )
+  check.eq(
+    converte_expressao_infixa([
+      "-", "3", "2", "+", "3", "*", "(", "-", "2", "/", "1", ")",
+    ]),
+    Ok([
+      Operando(-32),
+      Operador(Soma),
+      Operando(3),
+      Operador(Multiplicacao),
+      Agrupador(ParenteseAbertura),
+      Operando(-2),
+      Operador(Divisao),
+      Operando(1),
+      Agrupador(ParenteseFechamento),
+    ]),
+  )
 }
 
 /// Auxiliar com o acumulador *pilha_conversao* da função 'converte_expressao_infixa'.
-pub fn converte_expressao_infixa_acc(caracteres: List(String), pilha_conversao: PilhaConversao) -> Result(List(Simbolo), Erro) {
+pub fn converte_expressao_infixa_acc(
+  caracteres: List(String),
+  pilha_conversao: PilhaConversao,
+) -> Result(List(Simbolo), Erro) {
   case caracteres {
     [primeiro, ..resto] -> gerencia_conversao(primeiro, pilha_conversao, resto)
     [] -> gerencia_conversao("", pilha_conversao, [])
@@ -182,18 +262,62 @@ pub fn converte_expressao_infixa_acc(caracteres: List(String), pilha_conversao: 
 }
 
 pub fn converte_expressao_infixa_acc_examples() {
-  check.eq(converte_expressao_infixa_acc(["-", "1", "2", "*", "7", "+", "(", "-", "2", "/", "2", ")", "*", "(", "4", "-", "1", ")"], PilhaVazia(True)), Ok([Operando(-12), Operador(Multiplicacao), Operando(7), Operador(Soma), Agrupador(ParenteseAbertura), Operando(-2), Operador(Divisao), Operando(2), Agrupador(ParenteseFechamento), Operador(Multiplicacao), Agrupador(ParenteseAbertura), Operando(4), Operador(Subtracao), Operando(1), Agrupador(ParenteseFechamento)]))
-  check.eq(converte_expressao_infixa_acc([], PilhaConversao(Operando(10), False)), Ok([Operando(10)]))
+  check.eq(
+    converte_expressao_infixa_acc(
+      [
+        "-", "1", "2", "*", "7", "+", "(", "-", "2", "/", "2", ")", "*", "(",
+        "4", "-", "1", ")",
+      ],
+      PilhaVazia(True),
+    ),
+    Ok([
+      Operando(-12),
+      Operador(Multiplicacao),
+      Operando(7),
+      Operador(Soma),
+      Agrupador(ParenteseAbertura),
+      Operando(-2),
+      Operador(Divisao),
+      Operando(2),
+      Agrupador(ParenteseFechamento),
+      Operador(Multiplicacao),
+      Agrupador(ParenteseAbertura),
+      Operando(4),
+      Operador(Subtracao),
+      Operando(1),
+      Agrupador(ParenteseFechamento),
+    ]),
+  )
+  check.eq(
+    converte_expressao_infixa_acc([], PilhaConversao(Operando(10), False)),
+    Ok([Operando(10)]),
+  )
 }
 
 /// Realiza o gerenciamento da pilha e da lista de saída durante a conversão de uma lista de caracteres
 /// formada pelo primeiro *caractere* e o *resto*, e uma *pilha_conversao*, retornando uma expressão ou
 /// um Erro caso a conversão seja inválida.
-pub fn gerencia_conversao(caractere: String, pilha_conversao: PilhaConversao, resto: List(String)) -> Result(List(Simbolo), Erro) {
+pub fn gerencia_conversao(
+  caractere: String,
+  pilha_conversao: PilhaConversao,
+  resto: List(String),
+) -> Result(List(Simbolo), Erro) {
   case caractere {
-    c if c == "+" || c == "*" || c == "/" -> processa_som_mul_div(c, pilha_conversao, resto)
+    c if c == "+" || c == "*" || c == "/" ->
+      processa_som_mul_div(c, pilha_conversao, resto)
     "-" -> processa_sub(pilha_conversao, resto)
-    n if n == "0" || n == "1" || n == "2" || n == "3" || n == "4" || n == "5" || n == "6" || n == "7" || n == "8" || n == "9" -> processa_num(n, pilha_conversao, resto)
+    n
+      if n == "0"
+      || n == "1"
+      || n == "2"
+      || n == "3"
+      || n == "4"
+      || n == "5"
+      || n == "6"
+      || n == "7"
+      || n == "8"
+      || n == "9"
+    -> processa_num(n, pilha_conversao, resto)
     "(" -> processa_pa(pilha_conversao, resto)
     ")" -> processa_pf(pilha_conversao, resto)
     "" -> processa_fim(pilha_conversao)
@@ -202,79 +326,326 @@ pub fn gerencia_conversao(caractere: String, pilha_conversao: PilhaConversao, re
 }
 
 pub fn gerencia_conversao_examples() {
-  check.eq(gerencia_conversao("/", PilhaConversao(Agrupador(ParenteseFechamento), False), ["7", "-", "2"]), Ok([Agrupador(ParenteseFechamento), Operador(Divisao), Operando(7), Operador(Subtracao), Operando(2)]))
-  check.eq(gerencia_conversao("-", PilhaConversao(Agrupador(ParenteseFechamento), False), ["9", "*", "3"]), Ok([Agrupador(ParenteseFechamento), Operador(Subtracao), Operando(9), Operador(Multiplicacao), Operando(3)]))
-  check.eq(gerencia_conversao("2", PilhaConversao(Agrupador(ParenteseFechamento), False), ["4", "*", "2"]), Error(ExpressaoInvalida))
-  check.eq(gerencia_conversao("(", PilhaConversao(Operador(Soma), False), ["1", "/", "1", ")"]), Ok([Operador(Soma), Agrupador(ParenteseAbertura), Operando(1), Operador(Divisao), Operando(1), Agrupador(ParenteseFechamento)]))
-  check.eq(gerencia_conversao(")", PilhaConversao(Operando(21), False), ["-", "9", "1"]), Ok([Operando(21), Agrupador(ParenteseFechamento), Operador(Subtracao), Operando(91)]))
+  check.eq(
+    gerencia_conversao(
+      "/",
+      PilhaConversao(Agrupador(ParenteseFechamento), False),
+      ["7", "-", "2"],
+    ),
+    Ok([
+      Agrupador(ParenteseFechamento),
+      Operador(Divisao),
+      Operando(7),
+      Operador(Subtracao),
+      Operando(2),
+    ]),
+  )
+  check.eq(
+    gerencia_conversao(
+      "-",
+      PilhaConversao(Agrupador(ParenteseFechamento), False),
+      ["9", "*", "3"],
+    ),
+    Ok([
+      Agrupador(ParenteseFechamento),
+      Operador(Subtracao),
+      Operando(9),
+      Operador(Multiplicacao),
+      Operando(3),
+    ]),
+  )
+  check.eq(
+    gerencia_conversao(
+      "2",
+      PilhaConversao(Agrupador(ParenteseFechamento), False),
+      ["4", "*", "2"],
+    ),
+    Error(ExpressaoInvalida),
+  )
+  check.eq(
+    gerencia_conversao("(", PilhaConversao(Operador(Soma), False), [
+      "1", "/", "1", ")",
+    ]),
+    Ok([
+      Operador(Soma),
+      Agrupador(ParenteseAbertura),
+      Operando(1),
+      Operador(Divisao),
+      Operando(1),
+      Agrupador(ParenteseFechamento),
+    ]),
+  )
+  check.eq(
+    gerencia_conversao(")", PilhaConversao(Operando(21), False), ["-", "9", "1"]),
+    Ok([
+      Operando(21),
+      Agrupador(ParenteseFechamento),
+      Operador(Subtracao),
+      Operando(91),
+    ]),
+  )
   check.eq(gerencia_conversao("", PilhaVazia(False), []), Ok([]))
 }
 
 /// Realiza o processamento da entrada sendo Soma, Multiplicação ou Divisão em uma conversão de uma lista
 /// de caracteres para uma expressão infixa, utilizando o *caractere*, a *pilha_conversao* e o *resto* da
 /// lista.
-pub fn processa_som_mul_div(caractere: String, pilha_conversao: PilhaConversao, resto: List(String)) -> Result(List(Simbolo), Erro) {
+pub fn processa_som_mul_div(
+  caractere: String,
+  pilha_conversao: PilhaConversao,
+  resto: List(String),
+) -> Result(List(Simbolo), Erro) {
   case pilha_conversao, caractere {
-    PilhaConversao(Operando(num), _), "+" -> result.try(converte_expressao_infixa_acc(resto, PilhaConversao(Operador(Soma), False)), fn(exp) {Ok([Operando(num), ..exp])})
-    PilhaConversao(Operando(num), _), "*" -> result.try(converte_expressao_infixa_acc(resto, PilhaConversao(Operador(Multiplicacao), False)), fn(exp) {Ok([Operando(num), ..exp])})
-    PilhaConversao(Operando(num), _), "/" -> result.try(converte_expressao_infixa_acc(resto, PilhaConversao(Operador(Divisao), False)), fn(exp) {Ok([Operando(num), ..exp])})
-    PilhaConversao(Agrupador(ParenteseFechamento), _), "+" -> result.try(converte_expressao_infixa_acc(resto, PilhaConversao(Operador(Soma), False)), fn(exp) {Ok([Agrupador(ParenteseFechamento), ..exp])})
-    PilhaConversao(Agrupador(ParenteseFechamento), _), "*" -> result.try(converte_expressao_infixa_acc(resto, PilhaConversao(Operador(Multiplicacao), False)), fn(exp) {Ok([Agrupador(ParenteseFechamento), ..exp])})
-    PilhaConversao(Agrupador(ParenteseFechamento), _), "/" -> result.try(converte_expressao_infixa_acc(resto, PilhaConversao(Operador(Divisao), False)), fn(exp) {Ok([Agrupador(ParenteseFechamento), ..exp])})
+    PilhaConversao(Operando(num), _), "+" ->
+      result.try(
+        converte_expressao_infixa_acc(
+          resto,
+          PilhaConversao(Operador(Soma), False),
+        ),
+        fn(exp) { Ok([Operando(num), ..exp]) },
+      )
+    PilhaConversao(Operando(num), _), "*" ->
+      result.try(
+        converte_expressao_infixa_acc(
+          resto,
+          PilhaConversao(Operador(Multiplicacao), False),
+        ),
+        fn(exp) { Ok([Operando(num), ..exp]) },
+      )
+    PilhaConversao(Operando(num), _), "/" ->
+      result.try(
+        converte_expressao_infixa_acc(
+          resto,
+          PilhaConversao(Operador(Divisao), False),
+        ),
+        fn(exp) { Ok([Operando(num), ..exp]) },
+      )
+    PilhaConversao(Agrupador(ParenteseFechamento), _), "+" ->
+      result.try(
+        converte_expressao_infixa_acc(
+          resto,
+          PilhaConversao(Operador(Soma), False),
+        ),
+        fn(exp) { Ok([Agrupador(ParenteseFechamento), ..exp]) },
+      )
+    PilhaConversao(Agrupador(ParenteseFechamento), _), "*" ->
+      result.try(
+        converte_expressao_infixa_acc(
+          resto,
+          PilhaConversao(Operador(Multiplicacao), False),
+        ),
+        fn(exp) { Ok([Agrupador(ParenteseFechamento), ..exp]) },
+      )
+    PilhaConversao(Agrupador(ParenteseFechamento), _), "/" ->
+      result.try(
+        converte_expressao_infixa_acc(
+          resto,
+          PilhaConversao(Operador(Divisao), False),
+        ),
+        fn(exp) { Ok([Agrupador(ParenteseFechamento), ..exp]) },
+      )
     _, _ -> Error(ExpressaoInvalida)
   }
 }
 
 pub fn processa_som_mul_div_examples() {
-  check.eq(processa_som_mul_div("+", PilhaConversao(Operando(2), False), ["1", "-", "2"]), Ok([Operando(2), Operador(Soma), Operando(1), Operador(Subtracao), Operando(2)]))
-  check.eq(processa_som_mul_div("*", PilhaConversao(Agrupador(ParenteseFechamento), False), ["7", "1"]), Ok([Agrupador(ParenteseFechamento), Operador(Multiplicacao), Operando(71)]))
-  check.eq(processa_som_mul_div("/", PilhaVazia(False), ["5"]), Error(ExpressaoInvalida))
+  check.eq(
+    processa_som_mul_div("+", PilhaConversao(Operando(2), False), [
+      "1", "-", "2",
+    ]),
+    Ok([
+      Operando(2),
+      Operador(Soma),
+      Operando(1),
+      Operador(Subtracao),
+      Operando(2),
+    ]),
+  )
+  check.eq(
+    processa_som_mul_div(
+      "*",
+      PilhaConversao(Agrupador(ParenteseFechamento), False),
+      ["7", "1"],
+    ),
+    Ok([Agrupador(ParenteseFechamento), Operador(Multiplicacao), Operando(71)]),
+  )
+  check.eq(
+    processa_som_mul_div("/", PilhaVazia(False), ["5"]),
+    Error(ExpressaoInvalida),
+  )
 }
 
 /// Realiza o processamento da entrada sendo Subtração em uma conversão de uma lista de caracteres para uma
 /// expressão infixa, utilizando a *pilha_conversao* e o *resto* da lista.
-pub fn processa_sub(pilha_conversao: PilhaConversao, resto: List(String)) -> Result(List(Simbolo), Erro) {
+pub fn processa_sub(
+  pilha_conversao: PilhaConversao,
+  resto: List(String),
+) -> Result(List(Simbolo), Erro) {
   case pilha_conversao {
-    PilhaVazia(True) -> result.try(converte_expressao_infixa_acc(resto, PilhaConversao(Operador(Subtracao), False)), fn(exp) {Ok(exp)})
-    PilhaConversao(Agrupador(ParenteseAbertura), _) -> result.try(converte_expressao_infixa_acc(resto, PilhaConversao(Operador(Subtracao), False)), fn(exp) {Ok([Agrupador(ParenteseAbertura), ..exp])})
-    PilhaConversao(Agrupador(ParenteseFechamento), _) -> result.try(converte_expressao_infixa_acc(resto, PilhaVazia(False)), fn(exp) {Ok([Agrupador(ParenteseFechamento), Operador(Subtracao), ..exp])})
-    PilhaConversao(Operando(num), _) -> result.try(converte_expressao_infixa_acc(resto, PilhaVazia(False)), fn(exp) {Ok([Operando(num), Operador(Subtracao), ..exp])})
+    PilhaVazia(True) ->
+      result.try(
+        converte_expressao_infixa_acc(
+          resto,
+          PilhaConversao(Operador(Subtracao), False),
+        ),
+        fn(exp) { Ok(exp) },
+      )
+    PilhaConversao(Agrupador(ParenteseAbertura), _) ->
+      result.try(
+        converte_expressao_infixa_acc(
+          resto,
+          PilhaConversao(Operador(Subtracao), False),
+        ),
+        fn(exp) { Ok([Agrupador(ParenteseAbertura), ..exp]) },
+      )
+    PilhaConversao(Agrupador(ParenteseFechamento), _) ->
+      result.try(
+        converte_expressao_infixa_acc(resto, PilhaVazia(False)),
+        fn(exp) {
+          Ok([Agrupador(ParenteseFechamento), Operador(Subtracao), ..exp])
+        },
+      )
+    PilhaConversao(Operando(num), _) ->
+      result.try(
+        converte_expressao_infixa_acc(resto, PilhaVazia(False)),
+        fn(exp) { Ok([Operando(num), Operador(Subtracao), ..exp]) },
+      )
     _ -> Error(ExpressaoInvalida)
   }
 }
 
 pub fn processa_sub_examples() {
-  check.eq(processa_sub(PilhaVazia(True), ["1", "+", "2"]), Ok([Operando(-1), Operador(Soma), Operando(2)]))
-  check.eq(processa_sub(PilhaConversao(Agrupador(ParenteseAbertura), True), ["1", "/", "2", ")"]), Ok([Agrupador(ParenteseAbertura), Operando(-1), Operador(Divisao), Operando(2), Agrupador(ParenteseFechamento)]))
-  check.eq(processa_sub(PilhaConversao(Agrupador(ParenteseFechamento), False), ["9", "*", "3"]), Ok([Agrupador(ParenteseFechamento), Operador(Subtracao), Operando(9), Operador(Multiplicacao), Operando(3)]))
-  check.eq(processa_sub(PilhaConversao(Operando(12), False), ["9"]), Ok([Operando(12), Operador(Subtracao), Operando(9)]))
+  check.eq(
+    processa_sub(PilhaVazia(True), ["1", "+", "2"]),
+    Ok([Operando(-1), Operador(Soma), Operando(2)]),
+  )
+  check.eq(
+    processa_sub(PilhaConversao(Agrupador(ParenteseAbertura), True), [
+      "1", "/", "2", ")",
+    ]),
+    Ok([
+      Agrupador(ParenteseAbertura),
+      Operando(-1),
+      Operador(Divisao),
+      Operando(2),
+      Agrupador(ParenteseFechamento),
+    ]),
+  )
+  check.eq(
+    processa_sub(PilhaConversao(Agrupador(ParenteseFechamento), False), [
+      "9", "*", "3",
+    ]),
+    Ok([
+      Agrupador(ParenteseFechamento),
+      Operador(Subtracao),
+      Operando(9),
+      Operador(Multiplicacao),
+      Operando(3),
+    ]),
+  )
+  check.eq(
+    processa_sub(PilhaConversao(Operando(12), False), ["9"]),
+    Ok([Operando(12), Operador(Subtracao), Operando(9)]),
+  )
   check.eq(processa_sub(PilhaVazia(False), ["9"]), Error(ExpressaoInvalida))
 }
 
 /// /// Realiza o processamento da entrada sendo um número em uma conversão de uma lista de caracteres para
 /// uma expressão infixa, utilizando o *numero*, a *pilha_conversao* e o *resto* da lista.
-pub fn processa_num(numero: String, pilha_conversao: PilhaConversao, resto: List(String)) -> Result(List(Simbolo), Erro) {
+pub fn processa_num(
+  numero: String,
+  pilha_conversao: PilhaConversao,
+  resto: List(String),
+) -> Result(List(Simbolo), Erro) {
   case pilha_conversao, int.parse(numero) {
-    PilhaVazia(_), Ok(num) -> result.try(converte_expressao_infixa_acc(resto, PilhaConversao(Operando(num), False)), fn(exp) {Ok(exp)})
-    PilhaConversao(Operador(Subtracao), _), Ok(num) -> result.try(converte_expressao_infixa_acc(resto, PilhaConversao(Operando(-num), False)), fn(exp) {Ok(exp)})
-    PilhaConversao(Operando(num), _), _ -> result.try(incrementa_operando(num, numero), fn(opconv) {
-      result.try(converte_expressao_infixa_acc(resto, PilhaConversao(Operando(opconv), False)), fn(exp) {Ok(exp)})})
-    PilhaConversao(Operador(op), _), Ok(num) if op == Soma || op == Divisao || op == Multiplicacao -> result.try(converte_expressao_infixa_acc(resto, PilhaConversao(Operando(num), False)), fn(exp) {Ok([Operador(op), ..exp])})
-    PilhaConversao(Agrupador(ParenteseAbertura), _), Ok(num) -> result.try(converte_expressao_infixa_acc(resto, PilhaConversao(Operando(num), False)), fn(exp) {Ok([Agrupador(ParenteseAbertura), ..exp])})
+    PilhaVazia(_), Ok(num) ->
+      result.try(
+        converte_expressao_infixa_acc(
+          resto,
+          PilhaConversao(Operando(num), False),
+        ),
+        fn(exp) { Ok(exp) },
+      )
+    PilhaConversao(Operador(Subtracao), _), Ok(num) ->
+      result.try(
+        converte_expressao_infixa_acc(
+          resto,
+          PilhaConversao(Operando(-num), False),
+        ),
+        fn(exp) { Ok(exp) },
+      )
+    PilhaConversao(Operando(num), _), _ ->
+      result.try(incrementa_operando(num, numero), fn(opconv) {
+        result.try(
+          converte_expressao_infixa_acc(
+            resto,
+            PilhaConversao(Operando(opconv), False),
+          ),
+          fn(exp) { Ok(exp) },
+        )
+      })
+    PilhaConversao(Operador(op), _), Ok(num)
+      if op == Soma || op == Divisao || op == Multiplicacao
+    ->
+      result.try(
+        converte_expressao_infixa_acc(
+          resto,
+          PilhaConversao(Operando(num), False),
+        ),
+        fn(exp) { Ok([Operador(op), ..exp]) },
+      )
+    PilhaConversao(Agrupador(ParenteseAbertura), _), Ok(num) ->
+      result.try(
+        converte_expressao_infixa_acc(
+          resto,
+          PilhaConversao(Operando(num), False),
+        ),
+        fn(exp) { Ok([Agrupador(ParenteseAbertura), ..exp]) },
+      )
     _, _ -> Error(ExpressaoInvalida)
   }
 }
 
 pub fn processa_num_examples() {
-  check.eq(processa_num("0", PilhaVazia(False), ["-", "4"]), Ok([Operando(0), Operador(Subtracao), Operando(4)]))
-  check.eq(processa_num("9", PilhaConversao(Operador(Subtracao), False), ["1", "/", "4"]), Ok([Operando(-91), Operador(Divisao), Operando(4)]))
-  check.eq(processa_num("4", PilhaConversao(Operando(-1), False), ["*", "2"]), Ok([Operando(-14), Operador(Multiplicacao), Operando(2)]))
-  check.eq(processa_num("0", PilhaConversao(Agrupador(ParenteseAbertura), True), ["1", "-", "1", ")"]), Ok([Agrupador(ParenteseAbertura), Operando(1), Operador(Subtracao), Operando(1), Agrupador(ParenteseFechamento)]))
-  check.eq(processa_num("1", PilhaConversao(Agrupador(ParenteseFechamento), False), ["+", "4"]), Error(ExpressaoInvalida))
+  check.eq(
+    processa_num("0", PilhaVazia(False), ["-", "4"]),
+    Ok([Operando(0), Operador(Subtracao), Operando(4)]),
+  )
+  check.eq(
+    processa_num("9", PilhaConversao(Operador(Subtracao), False), [
+      "1", "/", "4",
+    ]),
+    Ok([Operando(-91), Operador(Divisao), Operando(4)]),
+  )
+  check.eq(
+    processa_num("4", PilhaConversao(Operando(-1), False), ["*", "2"]),
+    Ok([Operando(-14), Operador(Multiplicacao), Operando(2)]),
+  )
+  check.eq(
+    processa_num("0", PilhaConversao(Agrupador(ParenteseAbertura), True), [
+      "1", "-", "1", ")",
+    ]),
+    Ok([
+      Agrupador(ParenteseAbertura),
+      Operando(1),
+      Operador(Subtracao),
+      Operando(1),
+      Agrupador(ParenteseFechamento),
+    ]),
+  )
+  check.eq(
+    processa_num("1", PilhaConversao(Agrupador(ParenteseFechamento), False), [
+      "+", "4",
+    ]),
+    Error(ExpressaoInvalida),
+  )
 }
 
 /// Incrementa o *operando* adicionando o *caractere* à direita.
-pub fn incrementa_operando(operando: Int, caractere: String) -> Result(Int, Erro) {
+pub fn incrementa_operando(
+  operando: Int,
+  caractere: String,
+) -> Result(Int, Erro) {
   case int.parse(int.to_string(operando) <> caractere) {
     Ok(num) -> Ok(num)
     Error(_) -> Error(CaractereInvalido)
@@ -289,50 +660,126 @@ pub fn incrementa_operando_examples() {
 
 /// /// Realiza o processamento da entrada sendo uma abertura de parênteses em uma conversão de uma lista de
 /// caracteres para uma expressão infixa, utilizando a *pilha_conversao* e o *resto* da lista.
-pub fn processa_pa(pilha_conversao: PilhaConversao, resto: List(String)) -> Result(List(Simbolo), Erro) {
+pub fn processa_pa(
+  pilha_conversao: PilhaConversao,
+  resto: List(String),
+) -> Result(List(Simbolo), Erro) {
   case pilha_conversao {
-    PilhaConversao(Operador(op), _) if op == Soma || op == Multiplicacao || op == Divisao -> result.try(converte_expressao_infixa_acc(resto, PilhaConversao(Agrupador(ParenteseAbertura), True)), fn(exp) {Ok([Operador(op), ..exp])})
-    PilhaVazia(_) -> result.try(converte_expressao_infixa_acc(resto, PilhaConversao(Agrupador(ParenteseAbertura), True)), fn(exp) {Ok(exp)})
+    PilhaConversao(Operador(op), _)
+      if op == Soma || op == Multiplicacao || op == Divisao
+    ->
+      result.try(
+        converte_expressao_infixa_acc(
+          resto,
+          PilhaConversao(Agrupador(ParenteseAbertura), True),
+        ),
+        fn(exp) { Ok([Operador(op), ..exp]) },
+      )
+    PilhaVazia(_) ->
+      result.try(
+        converte_expressao_infixa_acc(
+          resto,
+          PilhaConversao(Agrupador(ParenteseAbertura), True),
+        ),
+        fn(exp) { Ok(exp) },
+      )
     _ -> Error(ExpressaoInvalida)
   }
 }
 
 pub fn processa_pa_examples() {
-  check.eq(processa_pa(PilhaConversao(Operador(Soma), False), ["4", "1", "-", "2", "1", ")"]), Ok([Operador(Soma), Agrupador(ParenteseAbertura), Operando(41), Operador(Subtracao), Operando(21), Agrupador(ParenteseFechamento)]))
-  check.eq(processa_pa(PilhaVazia(False), ["2", "-", "1", ")"]), Ok([Agrupador(ParenteseAbertura), Operando(2), Operador(Subtracao), Operando(1), Agrupador(ParenteseFechamento)]))
-  check.eq(processa_pa(PilhaConversao(Operador(Subtracao), False), ["0", "*", "9", ")"]), Error(ExpressaoInvalida))
+  check.eq(
+    processa_pa(PilhaConversao(Operador(Soma), False), [
+      "4", "1", "-", "2", "1", ")",
+    ]),
+    Ok([
+      Operador(Soma),
+      Agrupador(ParenteseAbertura),
+      Operando(41),
+      Operador(Subtracao),
+      Operando(21),
+      Agrupador(ParenteseFechamento),
+    ]),
+  )
+  check.eq(
+    processa_pa(PilhaVazia(False), ["2", "-", "1", ")"]),
+    Ok([
+      Agrupador(ParenteseAbertura),
+      Operando(2),
+      Operador(Subtracao),
+      Operando(1),
+      Agrupador(ParenteseFechamento),
+    ]),
+  )
+  check.eq(
+    processa_pa(PilhaConversao(Operador(Subtracao), False), ["0", "*", "9", ")"]),
+    Error(ExpressaoInvalida),
+  )
 }
 
 /// Realiza o processamento da entrada sendo um fechamento de parênteses em uma conversão de uma lista de
 /// caracteres para uma expressão infixa, utilizando a *pilha_conversao* e o *resto* da lista.
-pub fn processa_pf(pilha_conversao: PilhaConversao, resto: List(String)) -> Result(List(Simbolo), Erro) {
+pub fn processa_pf(
+  pilha_conversao: PilhaConversao,
+  resto: List(String),
+) -> Result(List(Simbolo), Erro) {
   case pilha_conversao {
-    PilhaConversao(Operando(num), False) -> result.try(converte_expressao_infixa_acc(resto, PilhaConversao(Agrupador(ParenteseFechamento), False)), fn(exp) {Ok([Operando(num), ..exp])})
+    PilhaConversao(Operando(num), False) ->
+      result.try(
+        converte_expressao_infixa_acc(
+          resto,
+          PilhaConversao(Agrupador(ParenteseFechamento), False),
+        ),
+        fn(exp) { Ok([Operando(num), ..exp]) },
+      )
     _ -> Error(ExpressaoInvalida)
   }
 }
 
 pub fn processa_pf_examples() {
-  check.eq(processa_pf(PilhaConversao(Operando(4), False), ["+", "4"]), Ok([Operando(4), Agrupador(ParenteseFechamento), Operador(Soma), Operando(4)]))
-  check.eq(processa_pf(PilhaVazia(True), ["5", "/", "5"]), Error(ExpressaoInvalida))
+  check.eq(
+    processa_pf(PilhaConversao(Operando(4), False), ["+", "4"]),
+    Ok([
+      Operando(4),
+      Agrupador(ParenteseFechamento),
+      Operador(Soma),
+      Operando(4),
+    ]),
+  )
+  check.eq(
+    processa_pf(PilhaVazia(True), ["5", "/", "5"]),
+    Error(ExpressaoInvalida),
+  )
 }
 
 /// Realiza o processamento ao fim da conversão de uma lista de caracteres para uma experessão infixa,
 /// utilizando a *pilha_conversao*.
-pub fn processa_fim(pilha_conversao: PilhaConversao) -> Result(List(Simbolo), Erro) {
+pub fn processa_fim(
+  pilha_conversao: PilhaConversao,
+) -> Result(List(Simbolo), Erro) {
   case pilha_conversao {
     PilhaVazia(_) -> Ok([])
-    PilhaConversao(Agrupador(ParenteseFechamento), _) -> Ok([Agrupador(ParenteseFechamento)])
+    PilhaConversao(Agrupador(ParenteseFechamento), _) ->
+      Ok([Agrupador(ParenteseFechamento)])
     PilhaConversao(Operando(num), _) -> Ok([Operando(num)])
     _ -> Error(ExpressaoInvalida)
   }
 }
 
 pub fn processa_fim_examples() {
-  check.eq(processa_fim(PilhaConversao(Agrupador(ParenteseFechamento), False)), Ok([Agrupador(ParenteseFechamento)]))
-  check.eq(processa_fim(PilhaConversao(Operando(51), False)), Ok([Operando(51)]))
+  check.eq(
+    processa_fim(PilhaConversao(Agrupador(ParenteseFechamento), False)),
+    Ok([Agrupador(ParenteseFechamento)]),
+  )
+  check.eq(
+    processa_fim(PilhaConversao(Operando(51), False)),
+    Ok([Operando(51)]),
+  )
   check.eq(processa_fim(PilhaVazia(False)), Ok([]))
-  check.eq(processa_fim(PilhaConversao(Operador(Multiplicacao), False)), Error(ExpressaoInvalida))
+  check.eq(
+    processa_fim(PilhaConversao(Operador(Multiplicacao), False)),
+    Error(ExpressaoInvalida),
+  )
 }
 
 // CONVERSÃO DA EXPRESSÃO PARA SUA FORMA PÓS-FIXA --------------------------------------------------------------------
@@ -396,7 +843,9 @@ pub fn converte_infixa_acc(
         Agrupador(ParenteseFechamento) ->
           result.try(trata_parenteses(resto, pilha), fn(l) { Ok(l) })
         Operador(oper) ->
-          result.try(trata_operador(Operador(oper), resto, pilha), fn(l) { Ok(l) })
+          result.try(trata_operador(Operador(oper), resto, pilha), fn(l) {
+            Ok(l)
+          })
       }
     [] -> result.try(converte_pilha(pilha), fn(l) { Ok(l) })
   }
@@ -544,16 +993,10 @@ pub fn trata_operador(
 ) -> Result(List(Simbolo), Erro) {
   case pilha {
     [oper, ..resto_pilha] ->
-      case
-        precedencia_simbolo(oper)
-        >= precedencia_simbolo(operador)
-      {
+      case precedencia_simbolo(oper) >= precedencia_simbolo(operador) {
         True ->
           result.try(
-            converte_infixa_acc(
-              [operador, ..resto_expressao],
-              resto_pilha,
-            ),
+            converte_infixa_acc([operador, ..resto_expressao], resto_pilha),
             fn(l) { Ok([oper, ..l]) },
           )
         False ->
