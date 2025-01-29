@@ -60,6 +60,33 @@ pub type Simbolo {
   Agrupador(Agrupador)
 }
 
+pub fn main(expressao: String) -> Result(Int, Erro) {
+  todo
+}
+
+pub fn main_examples() {
+  check.eq("2 + 2", Ok(4))
+  check.eq("10 - 3", Ok(7))
+  check.eq("4 * 5", Ok(20))
+  check.eq("20 / 4", Ok(5))
+  check.eq("1 + 2 * 3", Ok(7))
+  check.eq("(1 + 2) * 3", Ok(9))
+  check.eq("10 / 2 + 3", Ok(8))
+  check.eq("10 / (2 + 3)", Ok(2))
+  check.eq("   5 +  3   ", Ok(8))
+  check.eq("7 * (2 + 3) ", Ok(35))
+  check.eq("1 + 2 * (3 + 4) - 5 / (2 + 3)", Ok(13))
+  check.eq("(10 - 5) * ((3 + 2) / 5)", Ok(5))
+  check.eq("((1 + 1) * (2 + 2)) / 2", Ok(4))
+  check.eq("1000000 + 2000000", Ok(3_000_000))
+  check.eq("123456 * 654321", Ok(80_779_853_376))
+  check.eq("2 + ", Error(ExpressaoInvalida))
+  check.eq("4 * (3 - )", Error(ExpressaoInvalida))
+  check.eq("(2 + 3", Error(ExpressaoInvalida))
+  check.eq("hello + world", Error(CaractereInvalido))
+  check.eq("", Error(ExpressaoInvalida))
+}
+
 pub fn avaliar_posfixa(expressao: List(Simbolo)) -> Result(Int, Erro) {
   avaliar_posfixa_loop(expressao, [])
 }
