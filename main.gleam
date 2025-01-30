@@ -75,7 +75,7 @@ pub fn main(expressao: String) -> Result(Int, Erro) {
   use expressao_infixa <- result.try(converte_expressao_infixa(
     expressao_verificada,
   ))
-  use expressao_posfixa <- result.try(converte_infixa(expressao_infixa))
+  use expressao_posfixa <- result.try(converte_posfixa(expressao_infixa))
   use resultado <- result.try(avaliar_posfixa(expressao_posfixa))
   Ok(resultado)
 }
@@ -583,7 +583,7 @@ pub fn processa_sub_examples() {
   check.eq(processa_sub(PilhaVazia(False), ["9"]), Error(ExpressaoInvalida))
 }
 
-/// /// Realiza o processamento da entrada sendo um número em uma conversão de uma lista de caracteres para
+/// Realiza o processamento da entrada sendo um número em uma conversão de uma lista de caracteres para
 /// uma expressão infixa, utilizando o *numero*, a *pilha_conversao* e o *resto* da lista.
 pub fn processa_num(
   numero: String,
@@ -827,13 +827,13 @@ pub fn processa_fim_examples() {
 
 /// Converte uma *expressao* na forma infixa para sua forma pós-fixa. Retorna um Erro caso a estrutura da
 /// expressão seja inválida.
-pub fn converte_infixa(expressao: List(Simbolo)) -> Result(List(Simbolo), Erro) {
-  converte_infixa_acc(expressao, [])
+pub fn converte_posfixa(expressao: List(Simbolo)) -> Result(List(Simbolo), Erro) {
+  converte_posfixa_acc(expressao, [], [])
 }
 
-pub fn converte_infixa_examples() {
+pub fn converte_posfixa_examples() {
   check.eq(
-    converte_infixa([
+    converte_posfixa([
       Operando(15),
       Operador(Multiplicacao),
       Agrupador(ParenteseAbertura),
@@ -844,7 +844,7 @@ pub fn converte_infixa_examples() {
     Error(ExpressaoInvalida),
   )
   check.eq(
-    converte_infixa([
+    converte_posfixa([
       Operando(2),
       Operador(Soma),
       Agrupador(ParenteseAbertura),
@@ -865,37 +865,33 @@ pub fn converte_infixa_examples() {
 
 /// Converte uma *expressao* na forma infixa para sua forma pós-fixa, utilizando a *pilha* como acumulador.
 /// Retorna um Erro caso a estrutura da expressão seja inválida.
-pub fn converte_infixa_acc(
+pub fn converte_posfixa_acc(
   expressao: List(Simbolo),
   pilha: List(Simbolo),
+  saida: List(Simbolo),
 ) -> Result(List(Simbolo), Erro) {
   case expressao {
     [simbolo, ..resto] ->
       case simbolo {
         Operando(op) ->
-          result.try(converte_infixa_acc(resto, pilha), fn(l) {
-            Ok([Operando(op), ..l])
-          })
+          converte_posfixa_acc(resto, pilha, list.append(saida, [Operando(op)]))
         Agrupador(ParenteseAbertura) ->
-          result.try(
-            converte_infixa_acc(resto, [Agrupador(ParenteseAbertura), ..pilha]),
-            fn(l) { Ok(l) },
+          converte_posfixa_acc(
+            resto,
+            [Agrupador(ParenteseAbertura), ..pilha],
+            saida,
           )
-        Agrupador(ParenteseFechamento) ->
-          result.try(trata_parenteses(resto, pilha), fn(l) { Ok(l) })
-        Operador(oper) ->
-          result.try(trata_operador(Operador(oper), resto, pilha), fn(l) {
-            Ok(l)
-          })
+        Agrupador(ParenteseFechamento) -> trata_parenteses(resto, pilha, saida)
+        Operador(oper) -> trata_operador(Operador(oper), resto, pilha, saida)
       }
-    [] -> result.try(converte_pilha(pilha), fn(l) { Ok(l) })
+    [] -> converte_pilha(pilha, saida)
   }
 }
 
-pub fn converte_infixa_acc_examples() {
-  check.eq(converte_infixa_acc([], []), Ok([]))
+pub fn converte_posfixa_acc_examples() {
+  check.eq(converte_posfixa_acc([], [], []), Ok([]))
   check.eq(
-    converte_infixa_acc(
+    converte_posfixa_acc(
       [
         Operando(15),
         Operador(Divisao),
@@ -903,23 +899,30 @@ pub fn converte_infixa_acc_examples() {
         Agrupador(ParenteseFechamento),
       ],
       [],
-    ),
-    Error(ExpressaoInvalida),
-  )
-  check.eq(
-    converte_infixa_acc(
-      [Agrupador(ParenteseAbertura), Operando(10), Operador(Soma), Operando(5)],
       [],
     ),
     Error(ExpressaoInvalida),
   )
   check.eq(
-    converte_infixa_acc([Operando(10), Operador(Subtracao), Operando(4)], []),
+    converte_posfixa_acc(
+      [Agrupador(ParenteseAbertura), Operando(10), Operador(Soma), Operando(5)],
+      [],
+      [],
+    ),
+    Error(ExpressaoInvalida),
+  )
+  check.eq(
+    converte_posfixa_acc(
+      [Operando(10), Operador(Subtracao), Operando(4)],
+      [],
+      [],
+    ),
     Ok([Operando(10), Operando(4), Operador(Subtracao)]),
   )
   check.eq(
-    converte_infixa_acc(
+    converte_posfixa_acc(
       [Operando(5), Operador(Soma), Operando(6), Operador(Divisao), Operando(4)],
+      [],
       [],
     ),
     Ok([
@@ -931,7 +934,7 @@ pub fn converte_infixa_acc_examples() {
     ]),
   )
   check.eq(
-    converte_infixa_acc(
+    converte_posfixa_acc(
       [
         Operando(1),
         Operador(Multiplicacao),
@@ -941,6 +944,7 @@ pub fn converte_infixa_acc_examples() {
         Operando(1),
         Agrupador(ParenteseFechamento),
       ],
+      [],
       [],
     ),
     Ok([
@@ -952,7 +956,7 @@ pub fn converte_infixa_acc_examples() {
     ]),
   )
   check.eq(
-    converte_infixa_acc(
+    converte_posfixa_acc(
       [
         Operando(4),
         Operador(Divisao),
@@ -970,6 +974,7 @@ pub fn converte_infixa_acc_examples() {
         Operando(3),
         Agrupador(ParenteseFechamento),
       ],
+      [],
       [],
     ),
     Ok([
@@ -989,95 +994,42 @@ pub fn converte_infixa_acc_examples() {
 }
 
 /// Trata o fechamento de parênteses utilizando a *pilha* no processo de conversão do *resto_expressao*
-/// para a forma pós-fixa. Retorna um Erro caso a estrutura da expressão seja inválida.
-pub fn trata_parenteses(
-  resto_expressao: List(Simbolo),
+fn trata_parenteses(
+  resto: List(Simbolo),
   pilha: List(Simbolo),
+  saida: List(Simbolo),
 ) -> Result(List(Simbolo), Erro) {
   case pilha {
-    [simbolo_empilhado, ..resto_pilha] ->
-      case simbolo_empilhado {
-        Agrupador(ParenteseAbertura) ->
-          result.try(converte_infixa_acc(resto_expressao, resto_pilha), fn(l) {
-            Ok(l)
-          })
-        Agrupador(ParenteseFechamento) -> Error(ExpressaoInvalida)
-        _ ->
-          result.try(trata_parenteses(resto_expressao, resto_pilha), fn(l) {
-            Ok([simbolo_empilhado, ..l])
-          })
-      }
+    [Agrupador(ParenteseAbertura), ..nova_pilha] ->
+      converte_posfixa_acc(resto, nova_pilha, saida)
+    [Agrupador(ParenteseFechamento), ..] -> Error(ExpressaoInvalida)
+    [operador, ..nova_pilha] ->
+      trata_parenteses(resto, nova_pilha, list.append(saida, [operador]))
     [] -> Error(ExpressaoInvalida)
   }
 }
 
-pub fn trata_parenteses_examples() {
-  check.eq(
-    trata_parenteses([Operador(Multiplicacao), Operando(9)], [
-      Operador(Soma),
-      Agrupador(ParenteseAbertura),
-    ]),
-    Ok([Operador(Soma), Operando(9), Operador(Multiplicacao)]),
-  )
-  check.eq(
-    trata_parenteses([Operador(Soma), Operando(1)], [Operador(Subtracao)]),
-    Error(ExpressaoInvalida),
-  )
-}
-
 /// Trata o gerenciamento do *operador* utilizando a *pilha* no processo de conversão do *resto_expressao*
 /// para a forma pós-fixa. Retorna um Erro caso a estrutura da expressão seja inválida.
-pub fn trata_operador(
+fn trata_operador(
   operador: Simbolo,
-  resto_expressao: List(Simbolo),
+  resto: List(Simbolo),
   pilha: List(Simbolo),
+  saida: List(Simbolo),
 ) -> Result(List(Simbolo), Erro) {
   case pilha {
     [oper, ..resto_pilha] ->
       case precedencia_simbolo(oper) >= precedencia_simbolo(operador) {
         True ->
-          result.try(
-            converte_infixa_acc([operador, ..resto_expressao], resto_pilha),
-            fn(l) { Ok([oper, ..l]) },
+          converte_posfixa_acc(
+            resto,
+            [operador, ..resto_pilha],
+            list.append(saida, [oper]),
           )
-        False ->
-          result.try(
-            converte_infixa_acc(resto_expressao, [operador, ..pilha]),
-            fn(l) { Ok(l) },
-          )
+        False -> converte_posfixa_acc(resto, [operador, ..pilha], saida)
       }
-    [] ->
-      result.try(converte_infixa_acc(resto_expressao, [operador]), fn(l) {
-        Ok(l)
-      })
+    [] -> converte_posfixa_acc(resto, [operador, ..pilha], saida)
   }
-}
-
-pub fn trata_operador_examples() {
-  check.eq(
-    trata_operador(Operador(Divisao), [Operando(3)], [Operador(Multiplicacao)]),
-    Ok([Operador(Multiplicacao), Operando(3), Operador(Divisao)]),
-  )
-  check.eq(
-    trata_operador(Operador(Multiplicacao), [Operando(5)], [Operador(Soma)]),
-    Ok([Operando(5), Operador(Multiplicacao), Operador(Soma)]),
-  )
-  check.eq(
-    trata_operador(Operador(Subtracao), [Operando(4)], []),
-    Ok([Operando(4), Operador(Subtracao)]),
-  )
-  check.eq(
-    trata_operador(
-      Operador(Soma),
-      [
-        Operando(4),
-        Agrupador(ParenteseFechamento),
-        Agrupador(ParenteseFechamento),
-      ],
-      [Agrupador(ParenteseAbertura)],
-    ),
-    Error(ExpressaoInvalida),
-  )
 }
 
 /// Verifica o valor de precedência de um *Simbolo*, retornando 2 caso seja Multiplicacao ou Divisao, 1
@@ -1103,26 +1055,16 @@ pub fn precedencia_simbolo_examples() {
 
 /// Converte a *pilha* de Operadores para uma pilha de Simbolos. Retorna um erro caso o restante da pilha
 /// possua parênteses pendentes.
-pub fn converte_pilha(pilha: List(Simbolo)) -> Result(List(Simbolo), Erro) {
-  list.try_map(pilha, fn(op) {
-    case op {
-      Agrupador(ParenteseAbertura) -> Error(ExpressaoInvalida)
-      Agrupador(ParenteseFechamento) -> Error(ExpressaoInvalida)
-      _ -> Ok(op)
-    }
-  })
-}
-
-pub fn converte_pilha_examples() {
-  check.eq(converte_pilha([]), Ok([]))
-  check.eq(
-    converte_pilha([Operador(Multiplicacao), Operador(Subtracao)]),
-    Ok([Operador(Multiplicacao), Operador(Subtracao)]),
-  )
-  check.eq(
-    converte_pilha([Operador(Soma), Agrupador(ParenteseFechamento)]),
-    Error(ExpressaoInvalida),
-  )
+fn converte_pilha(
+  pilha: List(Simbolo),
+  saida: List(Simbolo),
+) -> Result(List(Simbolo), Erro) {
+  case pilha {
+    [] -> Ok(saida)
+    [Operador(op), ..resto] ->
+      converte_pilha(resto, list.append(saida, [Operador(op)]))
+    _ -> Error(ExpressaoInvalida)
+  }
 }
 
 pub fn avaliar_posfixa(expressao: List(Simbolo)) -> Result(Int, Erro) {
