@@ -583,8 +583,6 @@ pub fn processa_sub_examples() {
   check.eq(processa_sub(PilhaVazia(False), ["9"]), Error(ExpressaoInvalida))
 }
 
-/// Realiza o processamento da entrada sendo um número em uma conversão de uma lista de caracteres para
-/// uma expressão infixa, utilizando o *numero*, a *pilha_conversao* e o *resto* da lista.
 pub fn processa_num(
   numero: String,
   pilha_conversao: PilhaConversao,
@@ -592,49 +590,35 @@ pub fn processa_num(
 ) -> Result(List(Simbolo), Erro) {
   case pilha_conversao, int.parse(numero) {
     PilhaVazia(_), Ok(num) ->
-      result.try(
-        converte_expressao_infixa_acc(
-          resto,
-          PilhaConversao(Operando(num), False),
-        ),
-        fn(exp) { Ok(exp) },
-      )
+      converte_expressao_infixa_acc(resto, PilhaConversao(Operando(num), False))
     PilhaConversao(Operador(Subtracao), _), Ok(num) ->
-      result.try(
-        converte_expressao_infixa_acc(
-          resto,
-          PilhaConversao(Operando(-num), False),
-        ),
-        fn(exp) { Ok(exp) },
+      converte_expressao_infixa_acc(
+        resto,
+        PilhaConversao(Operando(-num), False),
       )
-    PilhaConversao(Operando(num), _), _ ->
-      result.try(incrementa_operando(num, numero), fn(opconv) {
-        result.try(
-          converte_expressao_infixa_acc(
-            resto,
-            PilhaConversao(Operando(opconv), False),
-          ),
-          fn(exp) { Ok(exp) },
-        )
-      })
+    PilhaConversao(Operando(num), _), _ -> {
+      use opconv <- result.try(incrementa_operando(num, numero))
+      converte_expressao_infixa_acc(
+        resto,
+        PilhaConversao(Operando(opconv), False),
+      )
+    }
     PilhaConversao(Operador(op), _), Ok(num)
       if op == Soma || op == Divisao || op == Multiplicacao
-    ->
-      result.try(
-        converte_expressao_infixa_acc(
-          resto,
-          PilhaConversao(Operando(num), False),
-        ),
-        fn(exp) { Ok([Operador(op), ..exp]) },
-      )
-    PilhaConversao(Agrupador(ParenteseAbertura), _), Ok(num) ->
-      result.try(
-        converte_expressao_infixa_acc(
-          resto,
-          PilhaConversao(Operando(num), False),
-        ),
-        fn(exp) { Ok([Agrupador(ParenteseAbertura), ..exp]) },
-      )
+    -> {
+      use exp <- result.try(converte_expressao_infixa_acc(
+        resto,
+        PilhaConversao(Operando(num), False),
+      ))
+      Ok([Operador(op), ..exp])
+    }
+    PilhaConversao(Agrupador(ParenteseAbertura), _), Ok(num) -> {
+      use exp <- result.try(converte_expressao_infixa_acc(
+        resto,
+        PilhaConversao(Operando(num), False),
+      ))
+      Ok([Agrupador(ParenteseAbertura), ..exp])
+    }
     _, _ -> Error(ExpressaoInvalida)
   }
 }
