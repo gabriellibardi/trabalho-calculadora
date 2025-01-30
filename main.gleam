@@ -429,54 +429,48 @@ pub fn processa_som_mul_div(
   resto: List(String),
 ) -> Result(List(Simbolo), Erro) {
   case pilha_conversao, caractere {
-    PilhaConversao(Operando(num), _), "+" ->
-      result.try(
-        converte_expressao_infixa_acc(
-          resto,
-          PilhaConversao(Operador(Soma), False),
-        ),
-        fn(exp) { Ok([Operando(num), ..exp]) },
-      )
-    PilhaConversao(Operando(num), _), "*" ->
-      result.try(
-        converte_expressao_infixa_acc(
-          resto,
-          PilhaConversao(Operador(Multiplicacao), False),
-        ),
-        fn(exp) { Ok([Operando(num), ..exp]) },
-      )
-    PilhaConversao(Operando(num), _), "/" ->
-      result.try(
-        converte_expressao_infixa_acc(
-          resto,
-          PilhaConversao(Operador(Divisao), False),
-        ),
-        fn(exp) { Ok([Operando(num), ..exp]) },
-      )
-    PilhaConversao(Agrupador(ParenteseFechamento), _), "+" ->
-      result.try(
-        converte_expressao_infixa_acc(
-          resto,
-          PilhaConversao(Operador(Soma), False),
-        ),
-        fn(exp) { Ok([Agrupador(ParenteseFechamento), ..exp]) },
-      )
-    PilhaConversao(Agrupador(ParenteseFechamento), _), "*" ->
-      result.try(
-        converte_expressao_infixa_acc(
-          resto,
-          PilhaConversao(Operador(Multiplicacao), False),
-        ),
-        fn(exp) { Ok([Agrupador(ParenteseFechamento), ..exp]) },
-      )
-    PilhaConversao(Agrupador(ParenteseFechamento), _), "/" ->
-      result.try(
-        converte_expressao_infixa_acc(
-          resto,
-          PilhaConversao(Operador(Divisao), False),
-        ),
-        fn(exp) { Ok([Agrupador(ParenteseFechamento), ..exp]) },
-      )
+    PilhaConversao(Operando(num), _), "+" -> {
+      use exp <- result.try(converte_expressao_infixa_acc(
+        resto,
+        PilhaConversao(Operador(Soma), False),
+      ))
+      Ok([Operando(num), ..exp])
+    }
+    PilhaConversao(Operando(num), _), "*" -> {
+      use exp <- result.try(converte_expressao_infixa_acc(
+        resto,
+        PilhaConversao(Operador(Multiplicacao), False),
+      ))
+      Ok([Operando(num), ..exp])
+    }
+    PilhaConversao(Operando(num), _), "/" -> {
+      use exp <- result.try(converte_expressao_infixa_acc(
+        resto,
+        PilhaConversao(Operador(Divisao), False),
+      ))
+      Ok([Operando(num), ..exp])
+    }
+    PilhaConversao(Agrupador(ParenteseFechamento), _), "+" -> {
+      use exp <- result.try(converte_expressao_infixa_acc(
+        resto,
+        PilhaConversao(Operador(Soma), False),
+      ))
+      Ok([Agrupador(ParenteseFechamento), ..exp])
+    }
+    PilhaConversao(Agrupador(ParenteseFechamento), _), "*" -> {
+      use exp <- result.try(converte_expressao_infixa_acc(
+        resto,
+        PilhaConversao(Operador(Multiplicacao), False),
+      ))
+      Ok([Agrupador(ParenteseFechamento), ..exp])
+    }
+    PilhaConversao(Agrupador(ParenteseFechamento), _), "/" -> {
+      use exp <- result.try(converte_expressao_infixa_acc(
+        resto,
+        PilhaConversao(Operador(Divisao), False),
+      ))
+      Ok([Agrupador(ParenteseFechamento), ..exp])
+    }
     _, _ -> Error(ExpressaoInvalida)
   }
 }
@@ -516,33 +510,31 @@ pub fn processa_sub(
 ) -> Result(List(Simbolo), Erro) {
   case pilha_conversao {
     PilhaVazia(True) ->
-      result.try(
-        converte_expressao_infixa_acc(
-          resto,
-          PilhaConversao(Operador(Subtracao), False),
-        ),
-        fn(exp) { Ok(exp) },
+      converte_expressao_infixa_acc(
+        resto,
+        PilhaConversao(Operador(Subtracao), False),
       )
-    PilhaConversao(Agrupador(ParenteseAbertura), _) ->
-      result.try(
-        converte_expressao_infixa_acc(
-          resto,
-          PilhaConversao(Operador(Subtracao), False),
-        ),
-        fn(exp) { Ok([Agrupador(ParenteseAbertura), ..exp]) },
-      )
-    PilhaConversao(Agrupador(ParenteseFechamento), _) ->
-      result.try(
-        converte_expressao_infixa_acc(resto, PilhaVazia(False)),
-        fn(exp) {
-          Ok([Agrupador(ParenteseFechamento), Operador(Subtracao), ..exp])
-        },
-      )
-    PilhaConversao(Operando(num), _) ->
-      result.try(
-        converte_expressao_infixa_acc(resto, PilhaVazia(False)),
-        fn(exp) { Ok([Operando(num), Operador(Subtracao), ..exp]) },
-      )
+    PilhaConversao(Agrupador(ParenteseAbertura), _) -> {
+      use exp <- result.try(converte_expressao_infixa_acc(
+        resto,
+        PilhaConversao(Operador(Subtracao), False),
+      ))
+      Ok([Agrupador(ParenteseAbertura), ..exp])
+    }
+    PilhaConversao(Agrupador(ParenteseFechamento), _) -> {
+      use exp <- result.try(converte_expressao_infixa_acc(
+        resto,
+        PilhaVazia(False),
+      ))
+      Ok([Agrupador(ParenteseFechamento), Operador(Subtracao), ..exp])
+    }
+    PilhaConversao(Operando(num), _) -> {
+      use exp <- result.try(converte_expressao_infixa_acc(
+        resto,
+        PilhaVazia(False),
+      ))
+      Ok([Operando(num), Operador(Subtracao), ..exp])
+    }
     _ -> Error(ExpressaoInvalida)
   }
 }
@@ -684,25 +676,24 @@ pub fn processa_pa(
   case pilha_conversao {
     PilhaConversao(Operador(op), _)
       if op == Soma || op == Multiplicacao || op == Divisao
-    ->
-      result.try(
-        converte_expressao_infixa_acc(
-          resto,
-          PilhaConversao(Agrupador(ParenteseAbertura), True),
-        ),
-        fn(exp) { Ok([Operador(op), ..exp]) },
-      )
-    PilhaConversao(Agrupador(ParenteseAbertura), _) ->
-      result.try(converte_expressao_infixa_acc(resto, pilha_conversao), fn(exp) {
-        Ok([Agrupador(ParenteseAbertura), ..exp])
-      })
+    -> {
+      use exp <- result.try(converte_expressao_infixa_acc(
+        resto,
+        PilhaConversao(Agrupador(ParenteseAbertura), True),
+      ))
+      Ok([Operador(op), ..exp])
+    }
+    PilhaConversao(Agrupador(ParenteseAbertura), _) -> {
+      use exp <- result.try(converte_expressao_infixa_acc(
+        resto,
+        pilha_conversao,
+      ))
+      Ok([Agrupador(ParenteseAbertura), ..exp])
+    }
     PilhaVazia(_) ->
-      result.try(
-        converte_expressao_infixa_acc(
-          resto,
-          PilhaConversao(Agrupador(ParenteseAbertura), True),
-        ),
-        fn(exp) { Ok(exp) },
+      converte_expressao_infixa_acc(
+        resto,
+        PilhaConversao(Agrupador(ParenteseAbertura), True),
       )
     _ -> Error(ExpressaoInvalida)
   }
@@ -745,18 +736,20 @@ pub fn processa_pf(
   resto: List(String),
 ) -> Result(List(Simbolo), Erro) {
   case pilha_conversao {
-    PilhaConversao(Operando(num), False) ->
-      result.try(
-        converte_expressao_infixa_acc(
-          resto,
-          PilhaConversao(Agrupador(ParenteseFechamento), False),
-        ),
-        fn(exp) { Ok([Operando(num), ..exp]) },
-      )
-    PilhaConversao(Agrupador(ParenteseFechamento), _) ->
-      result.try(converte_expressao_infixa_acc(resto, pilha_conversao), fn(exp) {
-        Ok([Agrupador(ParenteseFechamento), ..exp])
-      })
+    PilhaConversao(Operando(num), False) -> {
+      use exp <- result.try(converte_expressao_infixa_acc(
+        resto,
+        PilhaConversao(Agrupador(ParenteseFechamento), False),
+      ))
+      Ok([Operando(num), ..exp])
+    }
+    PilhaConversao(Agrupador(ParenteseFechamento), _) -> {
+      use exp <- result.try(converte_expressao_infixa_acc(
+        resto,
+        pilha_conversao,
+      ))
+      Ok([Agrupador(ParenteseFechamento), ..exp])
+    }
     _ -> Error(ExpressaoInvalida)
   }
 }
