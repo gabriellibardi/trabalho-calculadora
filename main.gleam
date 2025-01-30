@@ -69,12 +69,8 @@ pub type PilhaConversao {
 }
 
 pub fn main(expressao: String) -> Result(Int, Erro) {
-  use expressao_verificada <- result.try(
-    converte_expressao_str(expressao) |> verifica_caracteres,
-  )
-  use expressao_infixa <- result.try(converte_expressao_infixa(
-    expressao_verificada,
-  ))
+  let expressao = converte_expressao_str(expressao)
+  use expressao_infixa <- result.try(converte_expressao_infixa(expressao))
   use expressao_posfixa <- result.try(converte_posfixa(expressao_infixa))
   use resultado <- result.try(avaliar_posfixa(expressao_posfixa))
   Ok(resultado)
@@ -117,126 +113,6 @@ pub fn converte_expressao_str_examples() {
   check.eq(converte_expressao_str("(2 - 3)* 1"), [
     "(", "2", "-", "3", ")", "*", "1",
   ])
-}
-
-// VERIFICAÇÃO DA LISTA DE CARACTERES ---------------------------------------------------------------------------------
-
-/// Verifica se a lista de *caracteres* pode formar uma possível expressão, retornando a lista de 
-/// entrada caso sejam ou um Erro caso contrário.
-pub fn verifica_expressao(
-  caracteres: List(String),
-) -> Result(List(String), Erro) {
-  use _ <- result.try(verifica_parenteses(caracteres))
-  use _ <- result.try(verifica_caracteres(caracteres))
-  Ok(caracteres)
-}
-
-pub fn verifica_expressao_examples() {
-  check.eq(verifica_expressao([]), Ok([]))
-  check.eq(
-    verifica_expressao([
-      "9", "2", "-", "1", "0", "*", "(", "1", "1", "+", "2", "2", ")", "/", "1",
-    ]),
-    Ok([
-      "9", "2", "-", "1", "0", "*", "(", "1", "1", "+", "2", "2", ")", "/", "1",
-    ]),
-  )
-  check.eq(
-    verifica_expressao([
-      "(", "5", "2", "-", "1", "4", ")", "*", ")", "9", "+", "2", ")",
-    ]),
-    Error(ExpressaoInvalida),
-  )
-  check.eq(
-    verifica_expressao(["7", "1", "-", "a", "/", "2"]),
-    Error(CaractereInvalido),
-  )
-}
-
-/// Verifica os *caracteres* de uma expressão possui os parênteses contados corretamente, retornando a
-/// lista de entrada caso estejam ou um Erro caso contrário.
-pub fn verifica_parenteses(
-  caracteres: List(String),
-) -> Result(List(String), Erro) {
-  case
-    list.fold(caracteres, 0, fn(acc, c) {
-      case acc < 0, c {
-        True, _ -> acc
-        False, "(" -> acc + 1
-        False, ")" -> acc - 1
-        False, _ -> acc
-      }
-    })
-    == 0
-  {
-    True -> Ok(caracteres)
-    False -> Error(ExpressaoInvalida)
-  }
-}
-
-pub fn verifica_parenteses_examples() {
-  check.eq(verifica_parenteses([]), Ok([]))
-  check.eq(
-    verifica_parenteses([
-      "(", "2", "3", "-", "1", "*", "(", "7", "/", "9", ")", "-", "1", ")",
-    ]),
-    Ok(["(", "2", "3", "-", "1", "*", "(", "7", "/", "9", ")", "-", "1", ")"]),
-  )
-  check.eq(
-    verifica_parenteses(["(", "1", "*", "1", "0", "(", "3", "*", "1", ")"]),
-    Error(ExpressaoInvalida),
-  )
-}
-
-/// Verifica se a integridade dos *caracteres*, retornando a lista caso os caracteres sejam íntegros ou
-/// um Erro caso contrário.
-/// Um caractere é íntegro se ele é um possível operando (número de 0 a 9) ou um operador (parênteses ou
-/// + - / *).
-pub fn verifica_caracteres(
-  caracteres: List(String),
-) -> Result(List(String), Erro) {
-  list.try_map(caracteres, verifica_caractere)
-}
-
-pub fn verifica_caracteres_examples() {
-  check.eq(verifica_caracteres([]), Ok([]))
-  check.eq(
-    verifica_caracteres([
-      "(", "1", "+", "2", ")", "*", "3", "/", "(", "8", "-", "9", ")",
-    ]),
-    Ok(["(", "1", "+", "2", ")", "*", "3", "/", "(", "8", "-", "9", ")"]),
-  )
-  check.eq(
-    verifica_caracteres(["9", "-", "2", "*", "a"]),
-    Error(CaractereInvalido),
-  )
-}
-
-/// Verifica se o *caractere* é válido para uma possível expressão. Retorna um Erro caso
-/// não seja.
-pub fn verifica_caractere(caractere: String) -> Result(String, Erro) {
-  case caractere, int.parse(caractere) {
-    "/", _ -> Ok(caractere)
-    "*", _ -> Ok(caractere)
-    "-", _ -> Ok(caractere)
-    "+", _ -> Ok(caractere)
-    "(", _ -> Ok(caractere)
-    ")", _ -> Ok(caractere)
-    _, Ok(_) -> Ok(caractere)
-    _, Error(_) -> Error(CaractereInvalido)
-  }
-}
-
-pub fn verifica_caractere_examples() {
-  check.eq(verifica_caractere(""), Error(CaractereInvalido))
-  check.eq(verifica_caractere("a"), Error(CaractereInvalido))
-  check.eq(verifica_caractere("2"), Ok("2"))
-  check.eq(verifica_caractere("/"), Ok("/"))
-  check.eq(verifica_caractere("*"), Ok("*"))
-  check.eq(verifica_caractere("-"), Ok("-"))
-  check.eq(verifica_caractere("+"), Ok("+"))
-  check.eq(verifica_caractere("("), Ok("("))
-  check.eq(verifica_caractere(")"), Ok(")"))
 }
 
 // CONVERSÃO PARA EXPRESSÃO INFIXA -----------------------------------------------------------------------------------
